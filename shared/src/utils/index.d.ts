@@ -1,0 +1,22 @@
+import Joi from 'joi';
+import { PropertyData, TranslatedPropertyData, CreatePropertyInput, PropertyType, ValidationResult, NormalizedPropertyData } from '../types';
+declare const propertyDataSchema: Joi.ObjectSchema<any>;
+declare const createPropertyInputSchema: Joi.ObjectSchema<any>;
+declare const updatePropertyInputSchema: Joi.ObjectSchema<any>;
+export declare function validatePropertyData(data: any): ValidationResult;
+export declare function validateCreatePropertyInput(data: any): ValidationResult;
+export declare function validateUpdatePropertyInput(data: any): ValidationResult;
+export declare function normalizePropertyType(propertyType: string): PropertyType;
+export declare function normalizePrice(price: number | string | undefined): number | undefined;
+export declare function normalizeSize(size: number | string | undefined): number | undefined;
+export declare function normalizeLocation(location: string): string;
+export declare function normalizeImages(images: string[] | undefined): string[];
+export declare function normalizePropertyData(data: PropertyData): NormalizedPropertyData;
+export declare function propertyDataToCreateInput(data: PropertyData): CreatePropertyInput;
+export declare function translatedPropertyDataToCreateInput(data: TranslatedPropertyData): CreatePropertyInput;
+export declare function isValidUrl(url: string): boolean;
+export declare function sanitizeString(str: string | undefined, maxLength?: number): string | undefined;
+export declare function isValidPrice(price: number | undefined): boolean;
+export declare function isValidSize(size: number | undefined): boolean;
+export { propertyDataSchema, createPropertyInputSchema, updatePropertyInputSchema };
+//# sourceMappingURL=index.d.ts.map

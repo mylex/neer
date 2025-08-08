@@ -1,0 +1,59 @@
+{
+  "name": "japanese-real-estate-scraper-backend",
+  "version": "1.0.0",
+  "description": "Backend services for Japanese real estate scraper",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "migrate": "ts-node src/database/migrator.ts",
+    "migrate:run": "ts-node src/database/migrator.ts run",
+    "migrate:status": "ts-node src/database/migrator.ts status",
+    "migrate:create": "ts-node src/database/migrator.ts create",
+    "db:init": "ts-node src/database/init.ts"
+  },
+  "dependencies": {
+    "@google-cloud/translate": "^9.2.0",
+    "axios": "^1.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.0.0",
+    "joi": "^17.9.2",
+    "node-cron": "^3.0.2",
+    "pg": "^8.11.3",
+    "puppeteer": "^21.1.1",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "redis": "^4.6.8",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/jest": "^29.5.4",
+    "@types/node": "^20.5.0",
+    "@types/node-cron": "^3.0.8",
+    "@types/pg": "^8.10.2",
+    "@typescript-eslint/eslint-plugin": "^6.4.0",
+    "@typescript-eslint/parser": "^6.4.0",
+    "eslint": "^8.47.0",
+    "jest": "^29.6.2",
+    "ts-jest": "^29.1.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.1.6"
+  },
+  "keywords": [
+    "real-estate",
+    "scraper",
+    "japanese",
+    "translation"
+  ],
+  "author": "",
+  "license": "MIT"
+}

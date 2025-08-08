@@ -1,0 +1,55 @@
+{
+  "name": "japanese-real-estate-scraper",
+  "version": "1.0.0",
+  "description": "A comprehensive web application for scraping and translating Japanese real estate listings",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "shared"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm run install:backend && npm run install:frontend && npm run install:shared",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "install:shared": "cd shared && npm install",
+    "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build:shared": "cd shared && npm run build",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "test": "npm run test:shared && npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test -- --watchAll=false",
+    "test:shared": "cd shared && npm test",
+    "lint": "npm run lint:backend && npm run lint:frontend && npm run lint:shared",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:shared": "cd shared && npm run lint",
+    "lint:fix": "npm run lint:fix:backend && npm run lint:fix:frontend && npm run lint:fix:shared",
+    "lint:fix:backend": "cd backend && npm run lint:fix",
+    "lint:fix:frontend": "cd frontend && npm run lint:fix",
+    "lint:fix:shared": "cd shared && npm run lint:fix",
+    "clean": "rm -rf backend/dist backend/node_modules frontend/build frontend/node_modules shared/dist shared/node_modules node_modules"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "keywords": [
+    "real-estate",
+    "scraper",
+    "japanese",
+    "translation",
+    "react",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
