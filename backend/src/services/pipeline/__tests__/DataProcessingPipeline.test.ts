@@ -49,7 +49,8 @@ describe('DataProcessingPipeline', () => {
         fallbackEnabled: false,
         cacheConfig: {
           ttl: 86400,
-          maxSize: 10000
+          maxSize: 10000,
+          keyPrefix: 'test:'
         }
       },
       processingOptions: {

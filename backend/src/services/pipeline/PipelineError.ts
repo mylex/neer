@@ -23,8 +23,8 @@ export enum PipelineErrorType {
  */
 export class PipelineError extends Error {
   public readonly type: PipelineErrorType;
-  public readonly originalError?: Error;
-  public readonly context?: Record<string, any>;
+  public readonly originalError: Error | undefined;
+  public readonly context: Record<string, any> | undefined;
   public readonly timestamp: Date;
   public readonly retryable: boolean;
 
