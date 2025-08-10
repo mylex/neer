@@ -1,4 +1,4 @@
-import { PropertyData, TranslatedPropertyData, TranslationStatus } from '@shared/types';
+import { PropertyData, TranslatedPropertyData, TranslationStatus, CreatePropertyInput, PropertyType } from '@shared/types';
 import { propertyRepository } from '../../database/repositories/PropertyRepository';
 import { ScraperFactory, SupportedSite, BaseScraper } from '../scraper';
 import { TranslationService } from '../translation/TranslationService';
@@ -228,7 +228,11 @@ export class DataProcessingPipeline {
     properties: PropertyData[], 
     siteName: SupportedSite
   ): Promise<{ translated: number; stored: number; errors: PipelineError[] }> {
-    const result = { translated: 0, stored: 0, errors: [] };
+    const result: { translated: number; stored: number; errors: PipelineError[] } = { 
+      translated: 0, 
+      stored: 0, 
+      errors: [] 
+    };
 
     try {
       // Step 1: Duplicate detection and filtering
@@ -285,11 +289,11 @@ export class DataProcessingPipeline {
         throw new PipelineError(
           `Scraping failed for ${siteName}`,
           PipelineErrorType.SCRAPING_ERROR,
-          new Error(scrapingResult.error || 'Unknown scraping error')
+          new Error(scrapingResult.errors?.join(', ') || 'Unknown scraping error')
         );
       }
 
-      return scrapingResult.properties || [];
+      return scrapingResult.data || [];
     } catch (error) {
       this.logger.error(`Scraping error for ${siteName}`, error as Error);
       throw error;
@@ -341,15 +345,15 @@ export class DataProcessingPipeline {
     for (const property of properties) {
       try {
         // Convert to create input format
-        const createInput = {
+        const createInput: CreatePropertyInput = {
           url: property.url,
           title: property.title,
           titleEn: property.titleEn,
           price: property.price,
           location: property.location,
           locationEn: property.locationEn,
-          sizeSqm: property.sizeSqm,
-          propertyType: property.propertyType,
+          sizeSqm: property.size,
+          propertyType: property.propertyType as PropertyType,
           description: property.description,
           descriptionEn: property.descriptionEn,
           images: property.images,
@@ -376,7 +380,7 @@ export class DataProcessingPipeline {
     // This is a simplified calculation - in a real implementation,
     // you might want to track this during the storage process
     try {
-      const stats = await propertyRepository.getStats();
+      await propertyRepository.getStats();
       // For now, assume all processed properties are new
       // This could be enhanced to track actual new vs updated counts
       result.newProperties = result.totalProcessed;
@@ -420,8 +424,15 @@ export class DataProcessingPipeline {
     };
     lastProcessed?: Date;
   }> {
-    const health = {
-      status: 'healthy' as const,
+    const health: {
+      status: 'healthy' | 'degraded' | 'unhealthy';
+      services: {
+        translation: boolean;
+        database: boolean;
+        scraping: boolean;
+      };
+    } = {
+      status: 'healthy',
       services: {
         translation: false,
         database: false,

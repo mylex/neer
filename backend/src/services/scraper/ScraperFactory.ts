@@ -1,7 +1,7 @@
 import { BaseScraper, ScraperOptions } from './BaseScraper';
 import { BrowserConfig } from './BrowserManager';
 import { SuumoScraper } from './SuumoScraper';
-import { ScraperConfigManager } from './ScraperConfig';
+
 
 export type SupportedSite = 'suumo' | 'homes' | 'athome';
 
@@ -11,11 +11,9 @@ export interface ScraperFactoryConfig {
 }
 
 export class ScraperFactory {
-  private configManager: ScraperConfigManager;
   private factoryConfig: ScraperFactoryConfig;
 
   constructor(config: ScraperFactoryConfig) {
-    this.configManager = new ScraperConfigManager();
     this.factoryConfig = config;
   }
 

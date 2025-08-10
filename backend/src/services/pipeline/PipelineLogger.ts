@@ -14,7 +14,7 @@ export class PipelineLogger {
 
   constructor() {
     this.logger = winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
+      level: process.env['LOG_LEVEL'] || 'info',
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.errors({ stack: true }),
@@ -68,7 +68,7 @@ export class PipelineLogger {
             winston.format.timestamp(),
             winston.format.json(),
             winston.format.printf(({ timestamp, level, message, ...meta }) => {
-              if (meta.activity === 'scraping') {
+              if (meta['activity'] === 'scraping') {
                 return `${timestamp} [${level.toUpperCase()}] ${message} | ${JSON.stringify(meta)}`;
               }
               return '';
@@ -83,7 +83,7 @@ export class PipelineLogger {
             winston.format.timestamp(),
             winston.format.json(),
             winston.format.printf(({ timestamp, level, message, ...meta }) => {
-              if (meta.activity === 'translation') {
+              if (meta['activity'] === 'translation') {
                 return `${timestamp} [${level.toUpperCase()}] ${message} | ${JSON.stringify(meta)}`;
               }
               return '';

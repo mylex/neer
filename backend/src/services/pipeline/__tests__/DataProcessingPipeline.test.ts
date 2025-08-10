@@ -25,6 +25,22 @@ describe('DataProcessingPipeline', () => {
     jest.clearAllMocks();
 
     // Create mock config
+    const mockTranslationConfig = {
+      googleCloudProjectId: 'test-project',
+      googleCloudKeyFile: undefined,
+      redisUrl: 'redis://localhost:6379',
+      batchSize: 10,
+      batchDelayMs: 1000,
+      fallbackEnabled: false,
+      cacheConfig: {
+        ttl: 86400,
+        maxSize: 10000,
+        keyPrefix: 'test:'
+      },
+      validateConfig: jest.fn(),
+      getSummary: jest.fn().mockReturnValue({})
+    };
+
     mockConfig = {
       scraperConfig: {
         browserConfig: {
@@ -40,19 +56,7 @@ describe('DataProcessingPipeline', () => {
           timeout: 30000
         }
       },
-      translationConfig: {
-        googleCloudProjectId: 'test-project',
-        googleCloudKeyFile: undefined,
-        redisUrl: 'redis://localhost:6379',
-        batchSize: 10,
-        batchDelayMs: 1000,
-        fallbackEnabled: false,
-        cacheConfig: {
-          ttl: 86400,
-          maxSize: 10000,
-          keyPrefix: 'test:'
-        }
-      },
+      translationConfig: mockTranslationConfig as any,
       processingOptions: {
         batchSize: 5,
         maxConcurrentSites: 2,
@@ -123,7 +127,10 @@ describe('DataProcessingPipeline', () => {
       const mockScraper = {
         scrapeProperties: jest.fn().mockResolvedValue({
           success: true,
-          properties: [mockPropertyData]
+          data: [mockPropertyData],
+          errors: [],
+          scrapedCount: 1,
+          skippedCount: 0
         })
       };
       mockScraperFactory.createScraper.mockReturnValue(mockScraper as any);
@@ -169,7 +176,10 @@ describe('DataProcessingPipeline', () => {
       const mockScraper = {
         scrapeProperties: jest.fn().mockResolvedValue({
           success: false,
-          error: 'Scraping failed'
+          data: [],
+          errors: ['Scraping failed'],
+          scrapedCount: 0,
+          skippedCount: 0
         })
       };
       mockScraperFactory.createScraper.mockReturnValue(mockScraper as any);
@@ -178,7 +188,7 @@ describe('DataProcessingPipeline', () => {
 
       expect(result.success).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0].type).toBe(PipelineErrorType.SCRAPING_ERROR);
+      expect(result.errors[0]?.type).toBe(PipelineErrorType.SITE_PROCESSING_ERROR);
     });
 
     it('should handle translation errors when skipTranslationOnError is true', async () => {
@@ -214,7 +224,10 @@ describe('DataProcessingPipeline', () => {
       const mockHomesScraper = {
         scrapeProperties: jest.fn().mockResolvedValue({
           success: true,
-          properties: [{ ...mockPropertyData, sourceWebsite: 'homes' }]
+          data: [{ ...mockPropertyData, sourceWebsite: 'homes' }],
+          errors: [],
+          scrapedCount: 1,
+          skippedCount: 0
         })
       };
       
@@ -223,7 +236,10 @@ describe('DataProcessingPipeline', () => {
           return {
             scrapeProperties: jest.fn().mockResolvedValue({
               success: true,
-              properties: [mockPropertyData]
+              data: [mockPropertyData],
+              errors: [],
+              scrapedCount: 1,
+              skippedCount: 0
             })
           } as any;
         } else if (site === 'homes') {

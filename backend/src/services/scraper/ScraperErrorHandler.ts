@@ -30,11 +30,10 @@ export class ScraperErrorHandler {
     const scraperError: ScraperError = {
       type: this.classifyError(error),
       message: error.message,
-      url,
+      ...(url && { url }),
       originalError: error,
       timestamp: new Date(),
-      retryable: false,
-      retryAfter: undefined
+      retryable: false
     };
 
     // Determine if error is retryable and set retry delay

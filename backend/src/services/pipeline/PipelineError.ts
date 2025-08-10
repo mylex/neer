@@ -89,13 +89,15 @@ export class PipelineError extends Error {
       type: this.type,
       timestamp: this.timestamp.toISOString(),
       retryable: this.retryable,
-      context: this.context,
-      originalError: this.originalError ? {
-        name: this.originalError.name,
-        message: this.originalError.message,
-        stack: this.originalError.stack
-      } : undefined,
-      stack: this.stack
+      ...(this.context && { context: this.context }),
+      ...(this.originalError && {
+        originalError: {
+          name: this.originalError.name,
+          message: this.originalError.message,
+          ...(this.originalError.stack && { stack: this.originalError.stack })
+        }
+      }),
+      ...(this.stack && { stack: this.stack })
     };
   }
 
