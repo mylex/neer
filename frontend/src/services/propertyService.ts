@@ -30,6 +30,8 @@ export interface PropertyFilters {
   maxSize?: number;
   page?: number;
   limit?: number;
+  sortBy?: 'price' | 'size' | 'listingDate' | 'location';
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface PropertyResponse {
@@ -41,8 +43,8 @@ export interface PropertyResponse {
 
 export interface SearchCriteria extends PropertyFilters {
   query?: string;
-  sortBy?: 'price' | 'size' | 'listingDate' | 'location';
-  sortOrder?: 'asc' | 'desc';
+  sortBy: 'price' | 'size' | 'listingDate' | 'location';
+  sortOrder: 'asc' | 'desc';
 }
 
 // Property API service

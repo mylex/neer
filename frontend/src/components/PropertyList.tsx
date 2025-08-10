@@ -20,9 +20,16 @@ import { propertyService, Property, PropertyFilters, PropertyResponse } from '..
 interface PropertyListProps {
   filters?: PropertyFilters;
   searchQuery?: string;
+  sortBy?: 'price' | 'size' | 'listingDate' | 'location';
+  sortOrder?: 'asc' | 'desc';
 }
 
-const PropertyList: React.FC<PropertyListProps> = ({ filters = {}, searchQuery }) => {
+const PropertyList: React.FC<PropertyListProps> = ({ 
+  filters = {}, 
+  searchQuery,
+  sortBy = 'listingDate',
+  sortOrder = 'desc'
+}) => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,9 +55,15 @@ const PropertyList: React.FC<PropertyListProps> = ({ filters = {}, searchQuery }
         response = await propertyService.searchProperties({
           query: searchQuery,
           ...requestFilters,
+          sortBy,
+          sortOrder,
         });
       } else {
-        response = await propertyService.getProperties(requestFilters);
+        response = await propertyService.getProperties({
+          ...requestFilters,
+          sortBy,
+          sortOrder,
+        });
       }
 
       setProperties(response.properties);
@@ -64,7 +77,7 @@ const PropertyList: React.FC<PropertyListProps> = ({ filters = {}, searchQuery }
     } finally {
       setLoading(false);
     }
-  }, [filters, searchQuery, pageSize]);
+  }, [filters, searchQuery, pageSize, sortBy, sortOrder]);
 
   useEffect(() => {
     setCurrentPage(1);
