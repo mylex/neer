@@ -1,4 +1,4 @@
 // API service layer exports
-// This file will be implemented in later tasks
-
-export {};
+export { default as api } from './api';
+export { default as propertyService } from './propertyService';
+export type { Property, PropertyFilters, PropertyResponse, SearchCriteria } from './propertyService';

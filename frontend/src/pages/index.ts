@@ -1,4 +1,3 @@
 // Page components exports
-// This file will be implemented in later tasks
-
-export {};
+export { default as PropertyListPage } from './PropertyListPage';
+export { default as PropertyDetailPage } from './PropertyDetailPage';
