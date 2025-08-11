@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { propertyRoutes } from './routes';
+import schedulerRoutes from './routes/scheduler';
+import monitoringRoutes from './routes/monitoring';
 import { errorHandler, notFoundHandler } from './middleware';
 
 // Load environment variables
@@ -35,6 +37,8 @@ app.get('/health', (_req, res) => {
 
 // API routes
 app.use('/api', propertyRoutes);
+app.use('/api/scheduler', schedulerRoutes);
+app.use('/api/monitoring', monitoringRoutes);
 
 // Error handling middleware
 app.use(notFoundHandler);
