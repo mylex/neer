@@ -2,29 +2,27 @@
 -- This migration adds additional indexes and optimizations for better query performance
 
 -- Add partial indexes for better performance on filtered queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_properties_translated_complete 
+CREATE INDEX IF NOT EXISTS idx_properties_translated_complete 
 ON properties(id, price, location_en, property_type, size_sqm, created_at) 
 WHERE translation_status = 'complete';
 
 -- Add covering index for common search patterns
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_properties_search_covering 
+CREATE INDEX IF NOT EXISTS idx_properties_search_covering 
 ON properties(price, property_type, size_sqm) 
-INCLUDE (id, title_en, location_en, images, listing_date, source_website)
 WHERE translation_status = 'complete' AND price IS NOT NULL;
 
 -- Add index for recent properties (commonly accessed)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_properties_recent 
-ON properties(created_at DESC, id) 
-WHERE created_at >= NOW() - INTERVAL '30 days';
+CREATE INDEX IF NOT EXISTS idx_properties_recent 
+ON properties(created_at DESC, id);
 
 -- Add index for price range queries with location
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_properties_price_location_type 
+CREATE INDEX IF NOT EXISTS idx_properties_price_location_type 
 ON properties(price, location_en, property_type, created_at DESC) 
 WHERE price IS NOT NULL AND location_en IS NOT NULL;
 
 -- Optimize full-text search with better GIN index
 DROP INDEX IF EXISTS idx_properties_fulltext;
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_properties_fulltext_optimized 
+CREATE INDEX IF NOT EXISTS idx_properties_fulltext_optimized 
 ON properties USING gin(
   to_tsvector('english', 
     COALESCE(title_en, '') || ' ' || 
@@ -36,12 +34,12 @@ ON properties USING gin(
 WHERE translation_status = 'complete';
 
 -- Add index for property type distribution queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_properties_type_stats 
+CREATE INDEX IF NOT EXISTS idx_properties_type_stats 
 ON properties(property_type, translation_status, created_at) 
 WHERE property_type IS NOT NULL;
 
 -- Add index for source website performance tracking
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_properties_source_performance 
+CREATE INDEX IF NOT EXISTS idx_properties_source_performance 
 ON properties(source_website, translation_status, created_at, updated_at);
 
 -- Create materialized view for frequently accessed statistics
@@ -199,3 +197,6 @@ $$ LANGUAGE plpgsql;
 
 -- Add table statistics update
 ANALYZE properties;
+
+-- Record this migration as applied
+INSERT INTO migrations (migration_name) VALUES ('003_performance_optimizations') ON CONFLICT (migration_name) DO NOTHING;

@@ -1,7 +1,14 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables based on NODE_ENV
+const envFile = process.env['NODE_ENV'] === 'production' 
+  ? '.env.production' 
+  : process.env['NODE_ENV'] === 'test' 
+    ? '.env.test' 
+    : '.env.development';
+
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 // Configuration interface
 interface Config {
@@ -29,6 +36,26 @@ interface Config {
   };
 }
 
+// Create Redis configuration with proper optional handling
+const createRedisConfig = () => {
+  const redisPassword = process.env['REDIS_PASSWORD'];
+  const baseConfig = {
+    host: process.env['REDIS_HOST'] || 'localhost',
+    port: parseInt(process.env['REDIS_PORT'] || '6379', 10),
+    db: parseInt(process.env['REDIS_DB'] || '0', 10),
+    ttl: {
+      properties: parseInt(process.env['REDIS_TTL_PROPERTIES'] || '3600', 10), // 1 hour
+      search: parseInt(process.env['REDIS_TTL_SEARCH'] || '300', 10), // 5 minutes
+      stats: parseInt(process.env['REDIS_TTL_STATS'] || '600', 10), // 10 minutes
+    },
+  };
+
+  if (redisPassword) {
+    return { ...baseConfig, password: redisPassword };
+  }
+  return baseConfig;
+};
+
 // Export configuration object
 export const config: Config = {
   port: parseInt(process.env['PORT'] || '3001', 10),
@@ -42,15 +69,5 @@ export const config: Config = {
     maxConnections: parseInt(process.env['DB_MAX_CONNECTIONS'] || '20', 10),
     minConnections: parseInt(process.env['DB_MIN_CONNECTIONS'] || '2', 10),
   },
-  redis: {
-    host: process.env['REDIS_HOST'] || 'localhost',
-    port: parseInt(process.env['REDIS_PORT'] || '6379', 10),
-    password: process.env['REDIS_PASSWORD'] || undefined,
-    db: parseInt(process.env['REDIS_DB'] || '0', 10),
-    ttl: {
-      properties: parseInt(process.env['REDIS_TTL_PROPERTIES'] || '3600', 10), // 1 hour
-      search: parseInt(process.env['REDIS_TTL_SEARCH'] || '300', 10), // 5 minutes
-      stats: parseInt(process.env['REDIS_TTL_STATS'] || '600', 10), // 10 minutes
-    },
-  },
+  redis: createRedisConfig(),
 };

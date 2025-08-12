@@ -9,14 +9,10 @@ WHERE price IS NOT NULL AND size_sqm IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_properties_type_price_size ON properties(property_type, price, size_sqm) 
 WHERE property_type IS NOT NULL AND price IS NOT NULL AND size_sqm IS NOT NULL;
 
--- Enhanced full-text search index with weights
+-- Enhanced full-text search index for English text
 DROP INDEX IF EXISTS idx_properties_fulltext;
 CREATE INDEX idx_properties_fulltext ON properties 
-USING gin(
-  setweight(to_tsvector('english', COALESCE(title_en, '')), 'A') ||
-  setweight(to_tsvector('english', COALESCE(location_en, '')), 'B') ||
-  setweight(to_tsvector('english', COALESCE(description_en, '')), 'C')
-)
+USING gin(to_tsvector('english', COALESCE(title_en, '') || ' ' || COALESCE(location_en, '') || ' ' || COALESCE(description_en, '')))
 WHERE title_en IS NOT NULL OR description_en IS NOT NULL OR location_en IS NOT NULL;
 
 -- Index for Japanese text search (partial matching)

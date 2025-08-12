@@ -1,9 +1,9 @@
 import { Translate } from '@google-cloud/translate/build/src/v2';
 import { createClient, RedisClientType } from 'redis';
-import { PropertyData, TranslatedPropertyData, TranslationStatus } from '@shared/types';
-import { TranslationConfig } from '@/services/translation/TranslationConfig';
-import { TranslationCache } from '@/services/translation/TranslationCache';
-import { TranslationError } from '@/services/translation/TranslationError';
+import { PropertyData, TranslatedPropertyData, TranslationStatus } from '../../models/Property';
+import { TranslationConfig } from './TranslationConfig';
+import { TranslationCache } from './TranslationCache';
+import { TranslationError } from './TranslationError';
 
 /**
  * Translation service for converting Japanese property data to English

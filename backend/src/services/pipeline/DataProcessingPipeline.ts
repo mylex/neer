@@ -1,4 +1,4 @@
-import { PropertyData, TranslatedPropertyData, TranslationStatus, CreatePropertyInput, PropertyType } from '@shared/types';
+import { PropertyData, TranslatedPropertyData, TranslationStatus, CreatePropertyInput, PropertyType } from '../../models/Property';
 import { propertyRepository } from '../../database/repositories/PropertyRepository';
 import { ScraperFactory, SupportedSite, BaseScraper } from '../scraper';
 import { TranslationService } from '../translation/TranslationService';

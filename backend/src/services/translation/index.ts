@@ -9,4 +9,4 @@ export {
   PropertyData,
   TranslatedPropertyData,
   TranslationStatus,
-} from '@shared/types';
+} from '../../models/Property';
