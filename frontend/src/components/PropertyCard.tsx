@@ -18,6 +18,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { Property } from '../services/propertyService';
 import { formatPrice, formatSize, formatDate, truncateText, capitalizeFirst } from '../utils/formatters';
+import LazyImage from './LazyImage';
 
 interface PropertyCardProps {
   property: Property;
@@ -70,16 +71,30 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, loading = false }
       }}
     >
       {primaryImage ? (
-        <CardMedia
-          component="img"
-          height="200"
-          image={primaryImage}
+        <LazyImage
+          src={primaryImage}
           alt={displayTitle}
-          sx={{
-            objectFit: 'cover',
-            cursor: 'pointer',
-          }}
+          height={200}
+          objectFit="cover"
           onClick={handleViewDetails}
+          style={{ cursor: 'pointer' }}
+          threshold={0.1}
+          rootMargin="50px"
+          errorPlaceholder={
+            <Box
+              sx={{
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'grey.200',
+                cursor: 'pointer',
+              }}
+              onClick={handleViewDetails}
+            >
+              <HomeIcon sx={{ fontSize: 48, color: 'grey.400' }} />
+            </Box>
+          }
         />
       ) : (
         <Box

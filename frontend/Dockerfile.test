@@ -1,0 +1,19 @@
+# Test Dockerfile for frontend
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Create coverage directory
+RUN mkdir -p coverage
+
+# Default command runs tests
+CMD ["npm", "test", "--", "--coverage", "--watchAll=false"]

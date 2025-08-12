@@ -1,6 +1,6 @@
 import express from 'express';
 import { Request, Response, NextFunction } from 'express';
-import { propertyRepository } from '../database/repositories/PropertyRepository';
+import { propertyService } from '../services/PropertyService';
 import { validatePagination } from '../middleware';
 import { PropertyFilters, PropertyType, TranslationStatus, SortField } from '../models/Property';
 
@@ -172,7 +172,7 @@ router.get('/properties', validatePagination, async (req: Request, res: Response
       }
     }
 
-    const result = await propertyRepository.findMany(filters, {
+    const result = await propertyService.getRepository().findMany(filters, {
       page,
       limit,
       sortBy,
@@ -376,7 +376,7 @@ router.get('/properties/search', validatePagination, async (req: Request, res: R
       }
     }
 
-    const result = await propertyRepository.search(searchQuery, filters, {
+    const result = await propertyService.getRepository().search(searchQuery, filters, {
       page,
       limit,
       sortBy,
@@ -410,7 +410,7 @@ router.get('/properties/clear-filters', validatePagination, async (req: Request,
     const { sortBy, sortOrder } = validateSortParams(getQueryParam(req, 'sortBy'), getQueryParam(req, 'sortOrder'));
 
     // Get all properties without any filters
-    const result = await propertyRepository.findMany({}, {
+    const result = await propertyService.getRepository().findMany({}, {
       page,
       limit,
       sortBy,
@@ -457,7 +457,7 @@ router.get('/properties/:id', async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    const property = await propertyRepository.findById(id);
+    const property = await propertyService.getRepository().findById(id);
     
     if (!property) {
       res.status(404).json({
@@ -484,7 +484,7 @@ router.get('/properties/:id', async (req: Request, res: Response, next: NextFunc
 // GET /api/stats - System statistics (bonus endpoint for monitoring)
 router.get('/stats', async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const stats = await propertyRepository.getStats();
+    const stats = await propertyService.getRepository().getStats();
     
     res.json({
       success: true,

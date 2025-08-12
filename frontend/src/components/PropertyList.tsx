@@ -15,7 +15,11 @@ import {
 } from '@mui/material';
 import { SelectChangeEvent } from '@mui/material/Select';
 import PropertyCard from './PropertyCard';
+import ErrorAlert from './ErrorAlert';
+import GracefulDegradation from './GracefulDegradation';
 import { propertyService, Property, PropertyFilters, PropertyResponse } from '../services/propertyService';
+import { useApiCall } from '../hooks/useApiCall';
+import { ApiError } from '../utils/errorUtils';
 
 interface PropertyListProps {
   filters?: PropertyFilters;
@@ -31,53 +35,62 @@ const PropertyList: React.FC<PropertyListProps> = ({
   sortOrder = 'desc'
 }) => {
   const [properties, setProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProperties, setTotalProperties] = useState(0);
   const [pageSize, setPageSize] = useState(12);
 
-  const fetchProperties = useCallback(async (page: number = 1, limit: number = pageSize) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const fetchPropertiesFunction = useCallback(async (page: number = 1, limit: number = pageSize) => {
+    const requestFilters = {
+      ...filters,
+      page,
+      limit,
+    };
 
-      const requestFilters = {
-        ...filters,
-        page,
-        limit,
-      };
+    let response: PropertyResponse;
+    
+    if (searchQuery) {
+      response = await propertyService.searchProperties({
+        query: searchQuery,
+        ...requestFilters,
+        sortBy,
+        sortOrder,
+      });
+    } else {
+      response = await propertyService.getProperties({
+        ...requestFilters,
+        sortBy,
+        sortOrder,
+      });
+    }
 
-      let response: PropertyResponse;
-      
-      if (searchQuery) {
-        response = await propertyService.searchProperties({
-          query: searchQuery,
-          ...requestFilters,
-          sortBy,
-          sortOrder,
-        });
-      } else {
-        response = await propertyService.getProperties({
-          ...requestFilters,
-          sortBy,
-          sortOrder,
-        });
-      }
+    return response;
+  }, [filters, searchQuery, pageSize, sortBy, sortOrder]);
 
+  const {
+    state: { data: response, loading, error },
+    execute: fetchProperties,
+    retry,
+    isRetrying,
+  } = useApiCall(fetchPropertiesFunction, {
+    maxRetries: 3,
+    onError: (error: ApiError) => {
+      console.error('Error fetching properties:', error);
+    },
+    onSuccess: () => {
+      console.log('Properties fetched successfully');
+    },
+  });
+
+  // Update local state when response changes
+  useEffect(() => {
+    if (response) {
       setProperties(response.properties);
       setTotalPages(response.totalPages);
       setTotalProperties(response.total);
       setCurrentPage(response.page);
-    } catch (err) {
-      console.error('Error fetching properties:', err);
-      setError('Failed to load properties. Please try again later.');
-      setProperties([]);
-    } finally {
-      setLoading(false);
     }
-  }, [filters, searchQuery, pageSize, sortBy, sortOrder]);
+  }, [response]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -96,6 +109,10 @@ const PropertyList: React.FC<PropertyListProps> = ({
     setPageSize(newPageSize);
     setCurrentPage(1);
     fetchProperties(1, newPageSize);
+  };
+
+  const handleRetry = () => {
+    retry();
   };
 
   const renderLoadingSkeletons = () => {
@@ -165,93 +182,87 @@ const PropertyList: React.FC<PropertyListProps> = ({
     </Paper>
   );
 
-  if (error) {
-    return (
-      <Box sx={{ mb: 3 }}>
-        <Alert 
-          severity="error" 
-          action={
-            <button 
-              onClick={() => fetchProperties(currentPage, pageSize)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'inherit',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-              }}
-            >
-              Retry
-            </button>
-          }
-        >
-          {error}
-        </Alert>
-      </Box>
-    );
-  }
-
   return (
-    <Box>
-      {renderResultsHeader()}
-
-      <Grid container spacing={3}>
-        {loading ? (
-          renderLoadingSkeletons()
-        ) : properties.length === 0 ? (
-          <Grid item xs={12}>
-            {renderEmptyState()}
-          </Grid>
-        ) : (
-          properties.map((property) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={property.id}>
-              <PropertyCard property={property} />
-            </Grid>
-          ))
-        )}
-      </Grid>
-
-      {!loading && properties.length > 0 && totalPages > 1 && (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            mt: 4,
-            gap: 2,
-          }}
-        >
-          <Pagination
-            count={totalPages}
-            page={currentPage}
-            onChange={handlePageChange}
-            color="primary"
-            size="large"
-            showFirstButton
-            showLastButton
-            sx={{
-              '& .MuiPagination-ul': {
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-              },
-            }}
+    <GracefulDegradation
+      loading={loading && !properties.length}
+      error={error}
+      onRetry={handleRetry}
+      errorMessage="Failed to load properties. Please check your connection and try again."
+    >
+      <Box>
+        {error && (
+          <ErrorAlert
+            error={error}
+            onRetry={handleRetry}
+            context="Property Loading"
+            showDetails={process.env.NODE_ENV === 'development'}
           />
-        </Box>
-      )}
+        )}
 
-      {loading && properties.length === 0 && (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            py: 4,
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      )}
-    </Box>
+        {renderResultsHeader()}
+
+        <Grid container spacing={3}>
+          {loading && !properties.length ? (
+            renderLoadingSkeletons()
+          ) : properties.length === 0 && !loading ? (
+            <Grid item xs={12}>
+              {renderEmptyState()}
+            </Grid>
+          ) : (
+            properties.map((property) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={property.id}>
+                <PropertyCard property={property} />
+              </Grid>
+            ))
+          )}
+        </Grid>
+
+        {!loading && properties.length > 0 && totalPages > 1 && (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              mt: 4,
+              gap: 2,
+            }}
+          >
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+              disabled={loading || isRetrying}
+              sx={{
+                '& .MuiPagination-ul': {
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                },
+              }}
+            />
+          </Box>
+        )}
+
+        {(loading || isRetrying) && properties.length > 0 && (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              py: 2,
+            }}
+          >
+            <CircularProgress size={24} />
+            <Typography variant="body2" sx={{ ml: 1 }}>
+              {isRetrying ? 'Retrying...' : 'Loading...'}
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </GracefulDegradation>
   );
 };
 

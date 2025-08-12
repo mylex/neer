@@ -25,15 +25,18 @@
     "@testing-library/user-event": "^13.5.0",
     "eslint": "^8.47.0",
     "@typescript-eslint/eslint-plugin": "^6.4.0",
-    "@typescript-eslint/parser": "^6.4.0"
+    "@typescript-eslint/parser": "^6.4.0",
+    "webpack-bundle-analyzer": "^4.9.0"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:optimized": "node scripts/optimize-build.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint src/**/*.{ts,tsx}",
-    "lint:fix": "eslint src/**/*.{ts,tsx} --fix"
+    "lint:fix": "eslint src/**/*.{ts,tsx} --fix",
+    "analyze": "npx webpack-bundle-analyzer build/static/js/*.js"
   },
   "eslintConfig": {
     "extends": [

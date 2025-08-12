@@ -6,12 +6,18 @@ import { propertyRoutes } from './routes';
 import schedulerRoutes from './routes/scheduler';
 import monitoringRoutes from './routes/monitoring';
 import { errorHandler, notFoundHandler } from './middleware';
+import { propertyService } from './services/PropertyService';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env['PORT'] || 3001;
+
+// Initialize services
+async function initializeServices(): Promise<void> {
+  await propertyService.initialize();
+}
 
 // Security middleware
 app.use(helmet());
@@ -46,9 +52,14 @@ app.use(errorHandler);
 
 // Start server
 if (process.env['NODE_ENV'] !== 'test') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env['NODE_ENV'] || 'development'}`);
+  initializeServices().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Environment: ${process.env['NODE_ENV'] || 'development'}`);
+    });
+  }).catch((error) => {
+    console.error('Failed to start server:', error);
+    process.exit(1);
   });
 }
 

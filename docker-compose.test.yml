@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  # Test Database
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: japanese-real-estate-db-test
+    environment:
+      POSTGRES_DB: japanese_real_estate_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d japanese_real_estate_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Test Redis
+  redis-test:
+    image: redis:7-alpine
+    container_name: japanese-real-estate-redis-test
+    ports:
+      - "6380:6379"
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Backend Tests
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    container_name: japanese-real-estate-backend-test
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test_user:test_password@postgres-test:5432/japanese_real_estate_test
+      REDIS_URL: redis://redis-test:6379
+      DB_HOST: postgres-test
+      DB_PORT: 5432
+      DB_NAME: japanese_real_estate_test
+      DB_USER: test_user
+      DB_PASSWORD: test_password
+      REDIS_HOST: redis-test
+      REDIS_PORT: 6379
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./coverage/backend:/app/coverage
+    networks:
+      - test-network
+    command: npm test
+
+  # Frontend Tests
+  frontend-test:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.test
+    container_name: japanese-real-estate-frontend-test
+    environment:
+      NODE_ENV: test
+      REACT_APP_API_BASE_URL: http://backend-test:3001
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - ./coverage/frontend:/app/coverage
+    networks:
+      - test-network
+    command: npm test -- --coverage --watchAll=false
+
+  # Shared Tests
+  shared-test:
+    build:
+      context: ./shared
+      dockerfile: Dockerfile.test
+    container_name: japanese-real-estate-shared-test
+    volumes:
+      - ./shared:/app
+      - /app/node_modules
+      - ./coverage/shared:/app/coverage
+    networks:
+      - test-network
+    command: npm test -- --coverage
+
+networks:
+  test-network:
+    driver: bridge

@@ -1,52 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Alert, Button } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import PropertyDetail from '../components/PropertyDetail';
+import ErrorAlert from '../components/ErrorAlert';
+import GracefulDegradation from '../components/GracefulDegradation';
 import { Property, propertyService } from '../services/propertyService';
+import { useApiCall } from '../hooks/useApiCall';
+import { ApiError } from '../utils/errorUtils';
 
 const PropertyDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [property, setProperty] = useState<Property | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const fetchPropertyFunction = useCallback(async () => {
+    if (!id) {
+      throw new Error('Property ID is required');
+    }
+
+    const propertyId = parseInt(id, 10);
+    if (isNaN(propertyId)) {
+      throw new Error('Invalid property ID');
+    }
+
+    return await propertyService.getProperty(propertyId);
+  }, [id]);
+
+  const {
+    state: { data: property, loading, error },
+    execute: fetchProperty,
+    retry,
+    isRetrying,
+  } = useApiCall(fetchPropertyFunction, {
+    maxRetries: 3,
+    onError: (error: ApiError) => {
+      console.error('Error fetching property:', error);
+    },
+  });
 
   useEffect(() => {
-    const fetchProperty = async () => {
-      if (!id) {
-        setError('Property ID is required');
-        setLoading(false);
-        return;
-      }
-
-      const propertyId = parseInt(id, 10);
-      if (isNaN(propertyId)) {
-        setError('Invalid property ID');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        const propertyData = await propertyService.getProperty(propertyId);
-        setProperty(propertyData);
-      } catch (err) {
-        console.error('Error fetching property:', err);
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError('Failed to load property details. Please try again.');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProperty();
-  }, [id]);
+  }, [fetchProperty]);
 
   if (!id) {
     return (
@@ -66,11 +61,29 @@ const PropertyDetailPage: React.FC = () => {
   }
 
   return (
-    <PropertyDetail 
-      property={property!} 
-      loading={loading} 
-      error={error} 
-    />
+    <GracefulDegradation
+      loading={loading}
+      error={error}
+      onRetry={retry}
+      errorMessage="Failed to load property details. Please check your connection and try again."
+    >
+      <Box>
+        {error && (
+          <ErrorAlert
+            error={error}
+            onRetry={retry}
+            context="Property Details"
+            showDetails={process.env.NODE_ENV === 'development'}
+          />
+        )}
+        
+        <PropertyDetail 
+          property={property!} 
+          loading={loading || isRetrying} 
+          error={error?.message || null} 
+        />
+      </Box>
+    </GracefulDegradation>
   );
 };
 

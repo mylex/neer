@@ -9,72 +9,193 @@ services:
       POSTGRES_DB: japanese_real_estate_dev
       POSTGRES_USER: dev_user
       POSTGRES_PASSWORD: dev_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
+      - ./backend/src/database/migrations:/docker-entrypoint-initdb.d/migrations
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev_user -d japanese_real_estate_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: japanese-real-estate-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
 
-  # Backend API (will be built in later tasks)
+  # Shared package build
+  shared:
+    build:
+      context: ./shared
+      dockerfile: Dockerfile
+      target: production
+    container_name: japanese-real-estate-shared
+    volumes:
+      - shared_dist:/app/dist
+    networks:
+      - app-network
+
+  # Backend API
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: production
     container_name: japanese-real-estate-backend
+    env_file:
+      - .env.development
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://dev_user:dev_password@postgres:5432/japanese_real_estate_dev
       REDIS_URL: redis://redis:6379
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: japanese_real_estate_dev
+      DB_USER: dev_user
+      DB_PASSWORD: dev_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 3001
+      LOG_LEVEL: debug
+      CORS_ORIGIN: http://localhost:3000
+      SCRAPING_DELAY_MIN: 1000
+      SCRAPING_DELAY_MAX: 3000
+      MAX_CONCURRENT_SCRAPERS: 2
     ports:
       - "3001:3001"
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      shared:
+        condition: service_completed_successfully
     volumes:
-      - ./backend:/app
-      - /app/node_modules
+      - ./backend/logs:/app/logs
+      - shared_dist:/app/shared/dist:ro
     networks:
       - app-network
+    restart: unless-stopped
     profiles:
       - full-stack
 
-  # Frontend React App (will be built in later tasks)
+  # Frontend React App
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
     container_name: japanese-real-estate-frontend
+    env_file:
+      - .env.development
     environment:
       REACT_APP_API_BASE_URL: http://localhost:3001
+      REACT_APP_ENVIRONMENT: development
+      REACT_APP_ITEMS_PER_PAGE: 20
     ports:
       - "3000:3000"
     depends_on:
       - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+    profiles:
+      - full-stack
+
+  # Development backend with hot reload
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: japanese-real-estate-backend-dev
+    env_file:
+      - .env.development
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://dev_user:dev_password@postgres:5432/japanese_real_estate_dev
+      REDIS_URL: redis://redis:6379
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: japanese_real_estate_dev
+      DB_USER: dev_user
+      DB_PASSWORD: dev_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 3001
+      LOG_LEVEL: debug
+    ports:
+      - "3001:3001"
+      - "9229:9229"  # Debug port
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/logs:/app/logs
+    networks:
+      - app-network
+    profiles:
+      - development
+
+  # Development frontend with hot reload
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: japanese-real-estate-frontend-dev
+    env_file:
+      - .env.development
+    environment:
+      REACT_APP_API_BASE_URL: http://localhost:3001
+      REACT_APP_ENVIRONMENT: development
+      CHOKIDAR_USEPOLLING: true
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend-dev
     volumes:
       - ./frontend:/app
       - /app/node_modules
     networks:
       - app-network
     profiles:
-      - full-stack
+      - development
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
+  shared_dist:
+    driver: local
 
 networks:
   app-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

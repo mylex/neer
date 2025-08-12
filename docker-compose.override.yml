@@ -1,0 +1,57 @@
+# Docker Compose override file for local development customization
+# This file is automatically loaded by docker-compose and can be used to override
+# settings in docker-compose.yml for local development
+
+version: '3.8'
+
+services:
+  # Override backend for local development
+  backend-dev:
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/logs:/app/logs
+      - ./shared/dist:/app/shared/dist:ro
+    environment:
+      # Enable debug logging for development
+      DEBUG: "app:*"
+      # Disable some production optimizations
+      NODE_OPTIONS: "--max-old-space-size=2048"
+    # Expose additional ports for debugging
+    ports:
+      - "3001:3001"
+      - "9229:9229"  # Node.js debug port
+
+  # Override frontend for local development
+  frontend-dev:
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/build
+    environment:
+      # Enable React development features
+      FAST_REFRESH: true
+      GENERATE_SOURCEMAP: true
+      # Disable some optimizations for faster builds
+      DISABLE_ESLINT_PLUGIN: false
+
+  # Override database for local development
+  postgres:
+    ports:
+      - "5432:5432"
+    environment:
+      # Enable more verbose logging for development
+      POSTGRES_LOG_STATEMENT: all
+      POSTGRES_LOG_MIN_DURATION_STATEMENT: 0
+
+  # Override Redis for local development
+  redis:
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --loglevel verbose
+
+# Additional volumes for development
+volumes:
+  # Named volume for node_modules to improve performance on macOS/Windows
+  backend_node_modules:
+  frontend_node_modules:

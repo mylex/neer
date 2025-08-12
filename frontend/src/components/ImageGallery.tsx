@@ -15,6 +15,7 @@ import {
   Fullscreen as FullscreenIcon,
   Home as HomeIcon,
 } from '@mui/icons-material';
+import LazyImage from './LazyImage';
 
 interface ImageGalleryProps {
   images: string[];
@@ -103,19 +104,16 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, title }) => {
           }}
           onClick={handleImageClick}
         >
-          <Box
-            component="img"
+          <LazyImage
             src={images[currentIndex]}
             alt={`${title} - Image ${currentIndex + 1}`}
-            sx={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
+            width="100%"
+            height="100%"
+            objectFit="cover"
+            style={{
               transition: 'transform 0.3s ease',
-              '&:hover': {
-                transform: 'scale(1.02)',
-              },
             }}
+            onClick={() => {}} // Handled by parent container
           />
 
           {/* Navigation Controls */}
@@ -258,15 +256,14 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, title }) => {
                   },
                 }}
               >
-                <Box
-                  component="img"
+                <LazyImage
                   src={image}
                   alt={`${title} - Thumbnail ${index + 1}`}
-                  sx={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                  }}
+                  width="100%"
+                  height="100%"
+                  objectFit="cover"
+                  threshold={0.2}
+                  rootMargin="100px"
                 />
               </Box>
             ))}
@@ -320,15 +317,16 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, title }) => {
             </IconButton>
 
             {/* Modal Image */}
-            <Box
-              component="img"
+            <LazyImage
               src={images[modalImageIndex]}
               alt={`${title} - Image ${modalImageIndex + 1}`}
-              sx={{
+              style={{
                 maxWidth: '90%',
                 maxHeight: '90%',
-                objectFit: 'contain',
               }}
+              objectFit="contain"
+              threshold={0}
+              rootMargin="0px"
             />
 
             {/* Modal Navigation */}
